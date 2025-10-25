@@ -7,6 +7,7 @@ import GameView from './components/GameView';
 import Header from './components/Header';
 import GameHistory from './components/GameHistory';
 import ShareScore from './components/ShareScore';
+import SheetView from './components/SheetView';
 
 const leagues = [
   'Monday Night Open',
@@ -29,16 +30,26 @@ const App: React.FC = () => {
   const [activeGameId, setActiveGameId] = useState<string | null>(null);
   const [view, setView] = useState<'active' | 'history'>('active');
   const [sharedGame, setSharedGame] = useState<Game | null>(null);
+  const [sheetNumber, setSheetNumber] = useState<number | null>(null);
 
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash;
-      if (hash.startsWith('#/')) {
+      if (hash.startsWith('#/sheet/')) {
+        const sheetNum = parseInt(hash.substring(8), 10);
+        if (!isNaN(sheetNum)) {
+            setSheetNumber(sheetNum);
+            setSharedGame(null);
+        } else {
+            window.location.hash = '';
+        }
+      } else if (hash.startsWith('#/')) {
         const gameId = hash.substring(2);
         const gameRef = ref(db, `games/${gameId}`);
         onValue(gameRef, (snapshot) => {
           if (snapshot.exists()) {
             setSharedGame(snapshot.val() as Game);
+            setSheetNumber(null);
           } else {
             setSharedGame(null);
             window.location.hash = '';
@@ -46,6 +57,7 @@ const App: React.FC = () => {
         });
       } else {
         setSharedGame(null);
+        setSheetNumber(null);
       }
     };
 
@@ -133,46 +145,59 @@ const App: React.FC = () => {
   const activeGame = games.find((game) => game.id === activeGameId);
   const activeGames = games.filter((game) => !game.isComplete);
   const completedGames = games.filter((game) => game.isComplete);
-
-  if (sharedGame) {
-    return (
-      <div className="bg-gray-900 flex items-center justify-center min-h-screen">
-          <ShareScore game={sharedGame} />
-      </div>
+  
+  let content;
+  if (sheetNumber !== null) {
+    const sheetGames = games
+      .filter(game => game.sheetNumber === sheetNumber && !game.isComplete)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const game = sheetGames.length > 0 ? sheetGames[0] : null;
+    content = <SheetView game={game} sheetNumber={sheetNumber} />;
+  } else if (sharedGame) {
+    content = (
+        <div className="bg-gray-900 flex items-center justify-center min-h-screen">
+            <ShareScore game={sharedGame} />
+        </div>
     );
-  }
-
-  return (
-    <div className="min-h-screen font-sans">
-      <Header />
-      <main className="container mx-auto p-4 md:p-6">
-        {activeGame ? (
-          <GameView
+  } else if (activeGame) {
+    content = (
+        <GameView
             game={activeGame}
             onUpdateGame={handleUpdateGame}
             onBack={() => {
-              setActiveGameId(null);
-              window.location.hash = '';
+                setActiveGameId(null);
+                window.location.hash = '';
             }}
-          />
-        ) : view === 'active' ? (
-          <GameList
+        />
+    )
+  } else if (view === 'active') {
+    content = (
+        <GameList
             games={activeGames}
             onNewGame={handleNewGame}
             onSelectGame={(game) => setActiveGameId(game.id)}
             onDeleteGame={handleDeleteGame}
             onShowHistory={() => setView('history')}
             onShareGame={handleShareGame}
-          />
-        ) : (
-          <GameHistory
+        />
+    )
+  } else {
+    content = (
+        <GameHistory
             games={completedGames}
             onViewGame={(game) => setActiveGameId(game.id)}
             onDeleteGame={handleDeleteGame}
             onShowActive={() => setView('active')}
             onShareGame={handleShareGame}
-          />
-        )}
+        />
+    )
+  }
+
+  return (
+    <div className="min-h-screen font-sans">
+      <Header />
+      <main className="container mx-auto p-4 md:p-6">
+        {content}
       </main>
     </div>
   );
