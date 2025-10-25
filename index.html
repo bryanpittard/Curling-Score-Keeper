@@ -14,6 +14,27 @@
     "react": "https://aistudiocdn.com/react@^19.2.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
   }
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "firebase/app";
+  import { getAnalytics } from "firebase/analytics";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvkIyFwF_HBEpg74jW9ZdkzP-Vx_0gbUk",
+    authDomain: "gen-lang-client-0156544692.firebaseapp.com",
+    projectId: "gen-lang-client-0156544692",
+    storageBucket: "gen-lang-client-0156544692.firebasestorage.app",
+    messagingSenderId: "638008234437",
+    appId: "1:638008234437:web:2d2bc6099287c8b6e3bbac",
+    measurementId: "G-MNN98S4E4B"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
 }
 </script>
 </head>
