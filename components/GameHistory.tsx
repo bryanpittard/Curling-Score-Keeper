@@ -12,6 +12,7 @@ interface GameHistoryProps {
   onViewGame: (game: Game) => void;
   onDeleteGame: (gameId: string) => void;
   onShowActive: () => void;
+  onShareGame: (game: Game) => void;
 }
 
 type SortableKey = 'league' | 'date' | 'teamName';
@@ -36,14 +37,14 @@ const generateFilename = (game: Game) => {
     const minutes = pad(date.getMinutes());
     const timestamp = `${year}-${month}-${day}_${hours}${minutes}`;
 
-    const saneLeague = (game.league || "League").replace(/[\s/\\?%*:|"<>]/g, '_');
-    const saneTeamA = (game.teamAName || "TeamA").replace(/[\s/\\?%*:|"<>]/g, '_');
-    const saneTeamB = (game.teamBName || "TeamB").replace(/[\s/\\?%*:|"<>]/g, '_');
+    const saneLeague = (game.league || "League").replace(/[\\s/\\?%*:|"<>]/g, '_');
+    const saneTeamA = (game.teamAName || "TeamA").replace(/[\\s/\\?%*:|"<>]/g, '_');
+    const saneTeamB = (game.teamBName || "TeamB").replace(/[\\s/\\?%*:|"<>]/g, '_');
 
     return `${saneLeague}_Sheet-${game.sheetNumber}_${saneTeamA}_vs_${saneTeamB}_${timestamp}`;
 }
 
-const GameHistory: React.FC<GameHistoryProps> = ({ games, onViewGame, onDeleteGame, onShowActive }) => {
+const GameHistory: React.FC<GameHistoryProps> = ({ games, onViewGame, onDeleteGame, onShowActive, onShareGame }) => {
   const [sortConfig, setSortConfig] = useState<{ key: SortableKey; direction: 'asc' | 'desc' }>({ key: 'date', direction: 'desc' });
   const [downloadingPngId, setDownloadingPngId] = useState<string | null>(null);
 
@@ -209,6 +210,7 @@ const GameHistory: React.FC<GameHistoryProps> = ({ games, onViewGame, onDeleteGa
                   <td className="px-4 py-3">{new Date(game.date).toLocaleDateString()}</td>
                   <td className="px-4 py-3 flex justify-end items-center gap-2 flex-wrap">
                     <button onClick={() => onViewGame(game)} className="font-semibold text-blue-500 hover:text-blue-700">View</button>
+                    <button onClick={() => onShareGame(game)} className="font-semibold text-purple-500 hover:text-purple-700">Share</button>
                     <button 
                       onClick={() => handleDownloadPng(game)}
                       disabled={downloadingPngId === game.id}

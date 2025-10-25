@@ -6,6 +6,7 @@ import GameList from './components/GameList';
 import GameView from './components/GameView';
 import Header from './components/Header';
 import GameHistory from './components/GameHistory';
+import ShareScore from './components/ShareScore';
 
 const leagues = [
   'Monday Night Open',
@@ -27,19 +28,44 @@ const App: React.FC = () => {
   const [games, setGames] = useState<Game[]>([]);
   const [activeGameId, setActiveGameId] = useState<string | null>(null);
   const [view, setView] = useState<'active' | 'history'>('active');
+  const [sharedGame, setSharedGame] = useState<Game | null>(null);
 
   useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      if (hash.startsWith('#/')) {
+        const gameId = hash.substring(2);
+        const gameRef = ref(db, `games/${gameId}`);
+        onValue(gameRef, (snapshot) => {
+          if (snapshot.exists()) {
+            setSharedGame(snapshot.val() as Game);
+          } else {
+            setSharedGame(null);
+            window.location.hash = '';
+          }
+        });
+      } else {
+        setSharedGame(null);
+      }
+    };
+
     const gamesRef = ref(db, 'games');
     onValue(gamesRef, (snapshot) => {
       const data = snapshot.val();
       const gamesArray = data && typeof data === 'object' ? Object.values(data) : [];
-      // Ensure every game object has an 'ends' property.
       const sanitizedGames = gamesArray.map((game: any) => ({
         ...game,
         ends: game.ends || [],
       }));
       setGames(sanitizedGames as Game[]);
     });
+
+    window.addEventListener('hashchange', handleHashChange);
+    handleHashChange(); // Initial check
+
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
   }, []);
 
   const handleNewGame = () => {
@@ -97,9 +123,24 @@ const App: React.FC = () => {
     }
   };
 
+  const handleShareGame = (gameToShare: Game) => {
+    const shareUrl = `${window.location.origin}/#/${gameToShare.id}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      alert('Shareable URL copied to clipboard!');
+    });
+  };
+
   const activeGame = games.find((game) => game.id === activeGameId);
   const activeGames = games.filter((game) => !game.isComplete);
   const completedGames = games.filter((game) => game.isComplete);
+
+  if (sharedGame) {
+    return (
+      <div className="bg-gray-900 flex items-center justify-center min-h-screen">
+          <ShareScore game={sharedGame} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen font-sans">
@@ -109,7 +150,10 @@ const App: React.FC = () => {
           <GameView
             game={activeGame}
             onUpdateGame={handleUpdateGame}
-            onBack={() => setActiveGameId(null)}
+            onBack={() => {
+              setActiveGameId(null);
+              window.location.hash = '';
+            }}
           />
         ) : view === 'active' ? (
           <GameList
@@ -118,6 +162,7 @@ const App: React.FC = () => {
             onSelectGame={(game) => setActiveGameId(game.id)}
             onDeleteGame={handleDeleteGame}
             onShowHistory={() => setView('history')}
+            onShareGame={handleShareGame}
           />
         ) : (
           <GameHistory
@@ -125,6 +170,7 @@ const App: React.FC = () => {
             onViewGame={(game) => setActiveGameId(game.id)}
             onDeleteGame={handleDeleteGame}
             onShowActive={() => setView('active')}
+            onShareGame={handleShareGame}
           />
         )}
       </main>

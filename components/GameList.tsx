@@ -7,9 +7,10 @@ interface GameListProps {
   onSelectGame: (game: Game) => void;
   onDeleteGame: (gameId: string) => void;
   onShowHistory: () => void;
+  onShareGame: (game: Game) => void;
 }
 
-const GameList: React.FC<GameListProps> = ({ games, onNewGame, onSelectGame, onDeleteGame, onShowHistory }) => {
+const GameList: React.FC<GameListProps> = ({ games, onNewGame, onSelectGame, onDeleteGame, onShowHistory, onShareGame }) => {
   const sortedGames = [...games].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const getLastEndDescription = (game: Game): string => {
@@ -86,6 +87,7 @@ const GameList: React.FC<GameListProps> = ({ games, onNewGame, onSelectGame, onD
                   </td>
                   <td className="px-6 py-4 text-right">
                      <div className="flex justify-end items-center gap-4 whitespace-nowrap">
+                        <button onClick={() => onShareGame(game)} className="font-semibold text-green-500 hover:text-green-700">Share</button>
                         <button onClick={() => onSelectGame(game)} className="font-semibold text-blue-500 hover:text-blue-700">View</button>
                         <button onClick={(e) => { e.stopPropagation(); onDeleteGame(game.id); }} className="font-semibold text-red-500 hover:text-red-700">
                           Delete
