@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Game } from './types';
-import useLocalStorage from './hooks/useLocalStorage';
+import { db } from './firebase';
+import { ref, onValue, set, remove } from 'firebase/database';
 import GameList from './components/GameList';
 import GameView from './components/GameView';
 import Header from './components/Header';
@@ -23,9 +24,23 @@ const leagues = [
 ];
 
 const App: React.FC = () => {
-  const [games, setGames] = useLocalStorage<Game[]>('curling-scores', []);
+  const [games, setGames] = useState<Game[]>([]);
   const [activeGameId, setActiveGameId] = useState<string | null>(null);
   const [view, setView] = useState<'active' | 'history'>('active');
+
+  useEffect(() => {
+    const gamesRef = ref(db, 'games');
+    onValue(gamesRef, (snapshot) => {
+      const data = snapshot.val();
+      const gamesArray = data && typeof data === 'object' ? Object.values(data) : [];
+      // Ensure every game object has an 'ends' property.
+      const sanitizedGames = gamesArray.map((game: any) => ({
+        ...game,
+        ends: game.ends || [],
+      }));
+      setGames(sanitizedGames as Game[]);
+    });
+  }, []);
 
   const handleNewGame = () => {
     const teamAName = prompt("Enter name for Team A (e.g., Red)", "Team Red") || "Team A";
@@ -48,8 +63,10 @@ const App: React.FC = () => {
     const hammerChoice = prompt(hammerPromptText, "1");
     const initialHammer = hammerChoice === '2' ? 'B' : 'A';
 
+    const newGameId = new Date().toISOString().replace(/[.#$\[\]]/g, '-');
+
     const newGame: Game = {
-      id: new Date().toISOString(),
+      id: newGameId,
       league,
       teamAName,
       teamBName,
@@ -62,21 +79,19 @@ const App: React.FC = () => {
       initialHammer,
       currentHammer: initialHammer,
     };
-    setGames([...games, newGame]);
+    const gameRef = ref(db, `games/${newGame.id}`);
+    set(gameRef, newGame);
     setActiveGameId(newGame.id);
   };
 
   const handleUpdateGame = (updatedGame: Game) => {
-    const updatedGames = games.map((game) =>
-      game.id === updatedGame.id ? updatedGame : game
-    );
-    setGames(updatedGames);
+    const gameRef = ref(db, `games/${updatedGame.id}`);
+    set(gameRef, updatedGame);
   };
   
   const handleDeleteGame = (gameId: string) => {
-    // The confirmation dialog has been removed to streamline the deletion process.
-    // The game record is now deleted immediately upon clicking the delete button.
-    setGames(games.filter((game) => game.id !== gameId));
+    const gameRef = ref(db, `games/${gameId}`);
+    remove(gameRef);
     if (activeGameId === gameId) {
       setActiveGameId(null);
     }
