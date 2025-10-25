@@ -1,0 +1,5 @@
+{
+  "name": "Curling Scorekeeper",
+  "description": "A web application to track scores for curling games. Users can manage multiple games, record scores for each end, view totals, and export game data to a JSON file. All data is saved locally in the browser.",
+  "requestFramePermissions": []
+}
